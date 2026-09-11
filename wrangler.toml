@@ -1,11 +1,13 @@
 name = "sub-manager"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
+workers_dev = false
+preview_urls = false
 
 [vars]
 # 站点名称（首页 / 登录页 / 标题显示）
 SITE_NAME = "订阅管理器"
-# 本地开发凭据放在 .dev.vars（已 gitignore）；生产环境用 wrangler secret put AUTH_USER / AUTH_PASS
+# 凭据：生产用 wrangler secret put AUTH_USER / AUTH_PASS，本地用 .dev.vars
 AUTH_USER = "admin"
 AUTH_PASS = "change-me"
 # 登录限流：默认 20 次失败 / 15 分钟；LOGIN_MAX_ATTEMPTS = "0" 可关闭
@@ -14,7 +16,15 @@ AUTH_PASS = "change-me"
 
 [[kv_namespaces]]
 binding = "SUB"
-id = "your_kv_namespace_id"
+id = "f4058ffb47fa48ccb6a86c4c0fbd89d4"
+
+[[routes]]
+pattern = "sub.ie.cx"
+custom_domain = true
+
+[[routes]]
+pattern = "sub.unicom.top"
+custom_domain = true
 
 [[rules]]
 type = "Text"
