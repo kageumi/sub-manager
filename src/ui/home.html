@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{{SITE_NAME}}</title>
+    <link rel="stylesheet" href="/app.css" />
+    <style>
+      .material-symbols-outlined {
+        font-family: 'Material Symbols Outlined';
+        font-weight: normal;
+        font-style: normal;
+        font-size: 24px;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        word-wrap: normal;
+        direction: ltr;
+        -webkit-font-feature-settings: 'liga';
+        -webkit-font-smoothing: antialiased;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(
+            1000px 520px at 15% 0%,
+            color-mix(in srgb, var(--md-sys-color-primary) 16%, transparent),
+            transparent 60%
+          ),
+          var(--md-sys-color-background);
+      }
+
+      .home {
+        width: min(480px, 100%);
+        padding: 32px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 28px;
+        background: var(--md-sys-color-surface-container-low);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+        animation: rise 0.4s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+
+      .logo {
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        flex-shrink: 0;
+        border-radius: 16px;
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .sub {
+        margin: 2px 0 0;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 13px;
+      }
+
+      .info {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 16px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 14px;
+        background: var(--md-sys-color-surface-container);
+        font-size: 13px;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      .row code {
+        padding: 2px 8px;
+        border-radius: 8px;
+        background: var(--md-sys-color-surface-container-highest);
+        color: var(--md-sys-color-on-surface);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 12px;
+      }
+
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        height: 48px;
+        border-radius: 24px;
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        font-size: 15px;
+        font-weight: 500;
+        text-decoration: none;
+        transition:
+          filter 0.15s,
+          transform 0.1s;
+      }
+
+      .cta:hover {
+        filter: brightness(1.08);
+      }
+      .cta:active {
+        transform: scale(0.98);
+      }
+      .cta .material-symbols-outlined {
+        font-size: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="home">
+      <div class="head">
+        <span class="logo material-symbols-outlined">subscriptions</span>
+        <div>
+          <h1>{{SITE_NAME}}</h1>
+          <p class="sub">代理订阅托管 · Dashboard</p>
+        </div>
+      </div>
+
+      <div class="info">
+        <div class="row"><span>公开订阅链接</span><code>/{id}</code></div>
+        <div class="row"><span>管理后台</span><code>/admin</code></div>
+      </div>
+
+      <a class="cta" href="/admin"> <span class="material-symbols-outlined">login</span>打开面板 </a>
+    </main>
+  </body>
+</html>

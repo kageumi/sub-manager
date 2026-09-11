@@ -1,0 +1,18 @@
+{
+  "name": "sub-manager",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "check": "wrangler deploy --dry-run",
+    "format": "prettier --write \"src/**/*.{js,css,html}\" \"*.{json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,css,html}\" \"*.{json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "wrangler": "^4.0.0"
+  }
+}

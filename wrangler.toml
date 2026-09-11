@@ -1,14 +1,27 @@
 name = "sub-manager"
 main = "src/index.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
 
 [vars]
+# 站点名称（首页 / 登录页 / 标题显示）
+SITE_NAME = "订阅管理器"
+# 本地开发凭据放在 .dev.vars（已 gitignore）；生产环境用 wrangler secret put AUTH_USER / AUTH_PASS
 AUTH_USER = "admin"
-AUTH_PASS = "password"
+AUTH_PASS = "change-me"
+# 登录限流：默认 20 次失败 / 15 分钟；LOGIN_MAX_ATTEMPTS = "0" 可关闭
+# LOGIN_MAX_ATTEMPTS = "20"
+# LOGIN_WINDOW_SECONDS = "900"
 
-[kv_namespaces]
+[[kv_namespaces]]
 binding = "SUB"
 id = "your_kv_namespace_id"
 
-[build]
-command = "npm install"
+[[rules]]
+type = "Text"
+globs = ["**/*.txt", "**/*.html", "**/ui/*.js", "**/ui/*.css"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.bin", "**/*.woff2"]
+fallthrough = true
