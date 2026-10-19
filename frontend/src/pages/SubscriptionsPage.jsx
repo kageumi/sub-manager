@@ -113,9 +113,8 @@ function accessRules(sub) {
 }
 
 function AccessBadge({ sub }) {
-  return (
-    <Badge variant={isRestricted(sub) ? 'secondary' : 'outline'}>{isRestricted(sub) ? '受限' : '公开'}</Badge>
-  )
+  const restricted = isRestricted(sub)
+  return <Badge variant={restricted ? 'secondary' : 'outline'}>{restricted ? '受限' : '公开'}</Badge>
 }
 
 function Access({ sub }) {

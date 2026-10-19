@@ -7,13 +7,12 @@ export function setUnauthorizedHandler(handler) {
 export async function requestJson(path, { method = 'GET', body, signal } = {}) {
   let response
   try {
-    response = await fetch(path, {
-      method,
-      signal,
-      credentials: 'same-origin',
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-    })
+    const init = { method, signal, credentials: 'same-origin' }
+    if (body) {
+      init.headers = { 'Content-Type': 'application/json' }
+      init.body = JSON.stringify(body)
+    }
+    response = await fetch(path, init)
   } catch (err) {
     if (err.name === 'AbortError') throw err
     throw new Error('网络连接失败，请检查网络后重试')

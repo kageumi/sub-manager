@@ -51,7 +51,7 @@ export function useSubscriptions() {
         const saved = await subscriptionApi.save(payload, existingId)
         if (mounted.current) {
           invalidate()
-          const { content, ...metadata } = saved
+          const { content: _content, ...metadata } = saved
           setItems((previous) => [metadata, ...previous.filter((sub) => sub.id !== saved.id)])
         }
         return saved

@@ -2,7 +2,7 @@ import { Toast as ToastPrimitive } from '@base-ui/react/toast'
 import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
-import { XIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from 'lucide-react'
+import { XIcon, CircleCheckIcon, OctagonXIcon } from 'lucide-react'
 
 const toast = ToastPrimitive.createToastManager()
 
@@ -88,17 +88,6 @@ function ToastDescription({ className, ...props }) {
   )
 }
 
-function ToastAction({ className, render = <Button variant="outline" size="sm" />, ...props }) {
-  return (
-    <ToastPrimitive.Action
-      data-slot="toast-action"
-      render={render}
-      className={cn('shrink-0', className)}
-      {...props}
-    />
-  )
-}
-
 function ToastClose({ className, children, render = <Button variant="ghost" size="icon-sm" />, ...props }) {
   return (
     <ToastPrimitive.Close
@@ -117,38 +106,17 @@ function ToastClose({ className, children, render = <Button variant="ghost" size
 }
 
 function ToastIcon({ type }) {
-  let icon = null
-
-  if (type === 'success') {
-    icon = <CircleCheckIcon aria-hidden="true" />
-  }
-
-  if (type === 'info') {
-    icon = <InfoIcon aria-hidden="true" />
-  }
-
-  if (type === 'warning') {
-    icon = <TriangleAlertIcon aria-hidden="true" />
-  }
-
-  if (type === 'error') {
-    icon = <OctagonXIcon className="text-destructive" aria-hidden="true" />
-  }
-
-  if (type === 'loading') {
-    icon = <Loader2Icon className="animate-spin" aria-hidden="true" />
-  }
-
-  if (!icon) {
-    return null
-  }
-
+  if (type !== 'success' && type !== 'error') return null
   return (
     <span
       data-slot="toast-icon"
       className="shrink-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4"
     >
-      {icon}
+      {type === 'success' ? (
+        <CircleCheckIcon aria-hidden="true" />
+      ) : (
+        <OctagonXIcon className="text-destructive" aria-hidden="true" />
+      )}
     </span>
   )
 }
@@ -164,7 +132,6 @@ function ToastList() {
           <ToastTitle />
           <ToastDescription />
         </div>
-        <ToastAction />
         <ToastClose />
       </ToastContent>
     </Toast>
@@ -184,21 +151,4 @@ function Toaster({ children, toastManager = toast, ...props }) {
   )
 }
 
-const createToastManager = ToastPrimitive.createToastManager
-const useToastManager = ToastPrimitive.useToastManager
-
-export {
-  Toaster,
-  Toast,
-  ToastAction,
-  ToastClose,
-  ToastContent,
-  ToastDescription,
-  ToastPortal,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-  createToastManager,
-  toast,
-  useToastManager,
-}
+export { Toaster, toast }

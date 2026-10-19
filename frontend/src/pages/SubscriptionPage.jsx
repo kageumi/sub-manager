@@ -108,7 +108,7 @@ export function SubscriptionPage({ id, onBack }) {
   }
   function download() {
     const draft = editor.draft
-    const extension = /^[\s]*[\[{]/.test(draft.content) ? 'json' : 'yaml'
+    const extension = /^\s*[[{]/.test(draft.content) ? 'json' : 'yaml'
     downloadText(
       draft.content,
       draft.filename.trim() || `${draft.id.trim() || 'subscription'}.${extension}`,

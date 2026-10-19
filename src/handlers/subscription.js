@@ -1,8 +1,7 @@
 import { getSubscription } from '../lib/store.js'
 import { error, methodNotAllowed, notFound, SECURITY_HEADERS } from '../lib/http.js'
-import { isValidId } from '../../shared/subscription.js'
+import { DEFAULT_CONTENT_TYPE, isDomainAllowed, isValidId } from '../../shared/subscription.js'
 import { isBlockedCrawler } from '../lib/bots.js'
-import { DEFAULT_CONTENT_TYPE, isDomainAllowed } from '../../shared/subscription.js'
 
 function matchesEtag(header, etag) {
   return (header ?? '').split(',').some((value) => {
@@ -51,7 +50,6 @@ export async function handleSubscription(request, env, id) {
     'Content-Type': sub.contentType || DEFAULT_CONTENT_TYPE,
     'Cache-Control': sub.allowedCountries.length ? 'no-store' : 'public, max-age=3600',
     Vary: 'User-Agent',
-    'X-Content-Type-Options': 'nosniff',
     'X-Subscription-Id': sub.id,
     'Content-Disposition': contentDisposition(sub.filename),
     'Access-Control-Allow-Origin': '*',

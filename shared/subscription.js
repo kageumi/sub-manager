@@ -1,8 +1,8 @@
 export const DEFAULT_CONTENT_TYPE = 'text/plain; charset=utf-8'
 export const MAX_CONTENT_BYTES = 24 * 1024 * 1024
-export const MAX_COUNTRIES = 20
-export const MAX_DOMAINS = 10
-export const MAX_DOMAIN_LIST_CHARS = 256
+const MAX_COUNTRIES = 20
+const MAX_DOMAINS = 10
+const MAX_DOMAIN_LIST_CHARS = 256
 
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g
 const HTML_TAGS = /<[^>]*>/g
@@ -11,13 +11,13 @@ const DOMAIN_PATTERN =
 
 const encoder = new TextEncoder()
 
-export function sanitizeHeaderValue(value) {
+function sanitizeHeaderValue(value) {
   if (value === undefined || value === null) return ''
   const text = String(value).trim()
   return !text || /[\u0000-\u001f\u007f]/.test(text) ? '' : text.slice(0, 512)
 }
 
-export function sanitizeFilename(value) {
+function sanitizeFilename(value) {
   const text = sanitizeHeaderValue(value)
   return text ? text.replace(/[\\"]/g, '').slice(0, 120) : ''
 }
@@ -38,7 +38,7 @@ export function normalizeCountryList(input) {
   return [...codes]
 }
 
-export function normalizeDomain(value) {
+function normalizeDomain(value) {
   let domain = String(value || '')
     .trim()
     .toLowerCase()

@@ -1,6 +1,6 @@
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs'
 import { cva } from 'class-variance-authority'
-import { cn } from 'cn'
+import { cn } from '@/lib/utils'
 
 function Tabs({ className, orientation = 'horizontal', ...props }) {
   return (
@@ -65,4 +65,4 @@ function TabsContent({ className, ...props }) {
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }
+export { Tabs, TabsList, TabsTrigger, TabsContent }

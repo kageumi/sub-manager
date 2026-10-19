@@ -27,7 +27,6 @@ export function Providers({ children }) {
   }, [])
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
     document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
   }, [dark])
   useEffect(() => {
