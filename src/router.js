@@ -1,34 +1,26 @@
-import { handleLanding } from './handlers/landing.js'
-import { handleAdmin } from './handlers/home.js'
-import { handleLoginPage } from './handlers/login.js'
-import { handleLoginRequest, handleLogoutRedirect, handleLogoutRequest } from './handlers/auth.js'
+import { handlePage } from './handlers/page.js'
+import { handleLoginRequest, handleLogoutRequest, handleSessionRequest } from './handlers/auth.js'
 import { handleAsset } from './handlers/assets.js'
 import { handleRobots } from './handlers/robots.js'
-import { handleFont } from './handlers/font.js'
 import { handleApi } from './handlers/api.js'
 import { handleSubscription } from './handlers/subscription.js'
 import { error, isSameOriginRequest, methodNotAllowed, notFound, text } from './lib/http.js'
 
-const GET_ONLY = new Set([
-  '/',
-  '/admin',
-  '/login',
-  '/app.js',
-  '/login.js',
-  '/app.css',
-  '/robots.txt',
-  '/fonts/material-symbols.woff2',
-  '/favicon.ico',
-])
+const GET_ONLY = new Set(['/', '/robots.txt', '/favicon.ico', '/favicon.svg'])
 
 export async function route(request, env) {
   const url = new URL(request.url)
   const pathname = url.pathname.replace(/\/{2,}/g, '/').replace(/\/$/, '') || '/'
+  url.pathname = pathname
 
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 })
   if (pathname === '/_health') return text('ok')
 
   if (GET_ONLY.has(pathname) && request.method !== 'GET' && request.method !== 'HEAD') {
+    return methodNotAllowed()
+  }
+
+  if (pathname.startsWith('/assets/') && request.method !== 'GET' && request.method !== 'HEAD') {
     return methodNotAllowed()
   }
 
@@ -41,20 +33,19 @@ export async function route(request, env) {
     return error(403, '跨站请求已被拒绝')
   }
 
-  if (pathname === '/') return handleLanding(request, env)
-  if (pathname === '/admin') return handleAdmin(request, env)
-  if (pathname === '/login') return handleLoginPage(request, env)
-  if (pathname === '/logout') return handleLogoutRedirect()
+  if (pathname === '/') return handlePage()
 
-  const asset = handleAsset(pathname)
-  if (asset) return asset
+  if (pathname.startsWith('/assets/') || pathname === '/favicon.svg') {
+    const asset = await handleAsset(request, env)
+    if (asset) return asset
+  }
 
   if (pathname === '/robots.txt') return handleRobots()
-  if (pathname === '/fonts/material-symbols.woff2') return handleFont()
   if (pathname === '/favicon.ico') return new Response(null, { status: 204 })
 
+  if (pathname === '/api/session') return handleSessionRequest(request, env)
   if (pathname === '/api/login') return handleLoginRequest(request, env)
-  if (pathname === '/api/logout') return handleLogoutRequest()
+  if (pathname === '/api/logout') return handleLogoutRequest(request)
   if (pathname === '/api/subs') return handleApi(request, env, url)
   if (/^\/api\/subs\/[^/]+$/.test(pathname)) return handleApi(request, env, url)
 

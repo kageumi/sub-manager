@@ -3,16 +3,37 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "bun@1.4.2",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "build": "vite build",
+    "dev": "bun run build && wrangler dev",
+    "dev:ui": "vite build --watch",
+    "deploy": "bun run build && wrangler deploy",
     "tail": "wrangler tail",
-    "check": "wrangler deploy --dry-run",
-    "format": "prettier --write \"src/**/*.{js,css,html}\" \"*.{json,md}\"",
-    "format:check": "prettier --check \"src/**/*.{js,css,html}\" \"*.{json,md}\""
+    "check": "bun run test && bun run format:check && bun run build && wrangler deploy --dry-run",
+    "format": "prettier --write \"src/**/*.js\" \"shared/**/*.js\" \"frontend/**/*.{js,jsx,html,css}\" \"tests/**/*.{js,jsx}\" \"*.{js,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"shared/**/*.js\" \"frontend/**/*.{js,jsx,html,css}\" \"tests/**/*.{js,jsx}\" \"*.{js,json,md}\"",
+    "test": "bun --conditions=browser test tests"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/react": "^16.3.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "happy-dom": "^20.14.6",
     "prettier": "^3.3.3",
+    "shadcn": "^4.22.1",
+    "tailwindcss": "^4.3.3",
+    "tw-animate-css": "^1.4.0",
+    "vite": "^8.3.0",
     "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.9.0",
+    "@fontsource-variable/geist": "^5.3.0",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.5.0",
+    "lucide-react": "^1.59.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   }
 }

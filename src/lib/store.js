@@ -1,4 +1,4 @@
-import { toMetadata, fromMetadata, sha256Hex } from './metadata.js'
+import { toMetadata, fromMetadata, sha256Hex } from '../../shared/subscription.js'
 
 const encoder = new TextEncoder()
 
@@ -26,7 +26,7 @@ function coerceStored(id, value, metadata) {
     return {
       content: legacy.content,
       metadata: fromMetadata(id, {
-        name: legacy.name,
+        ...legacy,
         allowedCountries: legacy.allowedCountries ?? legacy.regions,
         allowedDomains: legacy.allowedDomains,
         createdAt: legacy.createdAt ?? legacy.created,
@@ -45,17 +45,18 @@ export async function listSubscriptions(env) {
 
   do {
     const page = await namespace.list(cursor ? { cursor } : undefined)
-    for (const key of page.keys) {
-      if (key.name.includes(':')) continue
-      if (key.metadata) {
-        const { id, ...meta } = fromMetadata(key.name, key.metadata)
-        items.push({ id, ...meta })
-        continue
-      }
-      const stored = await namespace.getWithMetadata(key.name)
-      if (!stored.value) continue
-      const { id, ...meta } = coerceStored(key.name, stored.value, null).metadata
-      items.push({ id, ...meta })
+    const keys = page.keys.filter((key) => !key.name.includes(':'))
+    // Bound legacy reads rather than serializing every key or flooding KV at once.
+    for (let offset = 0; offset < keys.length; offset += 10) {
+      const batch = await Promise.all(
+        keys.slice(offset, offset + 10).map(async (key) => {
+          if (key.metadata) return fromMetadata(key.name, key.metadata)
+          const stored = await namespace.getWithMetadata(key.name)
+          if (stored.value == null) return null
+          return coerceStored(key.name, stored.value, stored.metadata).metadata
+        }),
+      )
+      items.push(...batch.filter(Boolean))
     }
     cursor = page.list_complete ? undefined : page.cursor
   } while (cursor)
@@ -65,7 +66,7 @@ export async function listSubscriptions(env) {
 
 export async function getSubscription(env, id) {
   const stored = await kv(env).getWithMetadata(id)
-  if (!stored.value) return null
+  if (stored.value == null) return null
   const coerced = coerceStored(id, stored.value, stored.metadata)
   return {
     id,

@@ -3,7 +3,7 @@ const JSON_HEADERS = {
   'Cache-Control': 'no-store',
 }
 
-const SECURITY_HEADERS = {
+export const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet, noimageindex',
@@ -58,10 +58,6 @@ export function methodNotAllowed() {
   return error(405, '请求方法不受支持')
 }
 
-export function redirect(location, { status = 302, headers = {} } = {}) {
-  return new Response(null, { status, headers: { Location: location, ...headers } })
-}
-
 export async function readJson(request, { maxBytes = MAX_JSON_BYTES } = {}) {
   const mediaType = (request.headers.get('Content-Type') ?? '').split(';')[0].trim().toLowerCase()
   if (mediaType !== 'application/json') {
@@ -73,10 +69,33 @@ export async function readJson(request, { maxBytes = MAX_JSON_BYTES } = {}) {
     return { error: '请求内容过大', status: 413 }
   }
 
+  const reader = request.body?.getReader()
+  if (!reader) return { error: '请求内容不是合法的 JSON', status: 400 }
+
   try {
-    return { body: await request.json() }
+    const decoder = new TextDecoder()
+    const chunks = []
+    let bytes = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      bytes += value.byteLength
+      if (bytes > maxBytes) {
+        await reader.cancel()
+        return { error: '请求内容过大', status: 413 }
+      }
+      chunks.push(decoder.decode(value, { stream: true }))
+    }
+    chunks.push(decoder.decode())
+    const body = JSON.parse(chunks.join(''))
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return { error: '请求内容必须为 JSON 对象', status: 400 }
+    }
+    return { body }
   } catch {
     return { error: '请求内容不是合法的 JSON', status: 400 }
+  } finally {
+    reader.releaseLock()
   }
 }
 
@@ -84,7 +103,7 @@ export function isSameOriginRequest(request) {
   const origin = request.headers.get('Origin')
   if (origin) {
     try {
-      if (new URL(origin).host !== new URL(request.url).host) return false
+      if (new URL(origin).origin !== new URL(request.url).origin) return false
     } catch {
       return false
     }
@@ -98,11 +117,11 @@ export function isSameOriginRequest(request) {
 
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'none'",
-  "script-src 'self' https://esm.sh",
+  "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data:",
-  "connect-src 'self' https://esm.sh",
+  "connect-src 'self'",
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'self'",

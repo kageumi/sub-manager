@@ -1,4 +1,4 @@
-import { adminPassword, adminUsername } from './config.js'
+import { accessPassword } from './config.js'
 import { SESSION_COOKIE, parseCookies, verifySession } from './session.js'
 
 const encoder = new TextEncoder()
@@ -18,12 +18,8 @@ export async function isAuthenticated(request, env) {
   return verifySession(env, token)
 }
 
-export async function verifyCredentials(env, username, password) {
-  const expectedUser = adminUsername(env)
-  const expectedPass = adminPassword(env)
-  if (!expectedUser || !expectedPass) return false
-
-  const userMatches = await secureEqual(String(username ?? ''), expectedUser)
-  const passMatches = await secureEqual(String(password ?? ''), expectedPass)
-  return userMatches && passMatches
+export async function verifyPassword(env, value) {
+  const expected = accessPassword(env)
+  if (!expected) return false
+  return secureEqual(String(value ?? ''), expected)
 }

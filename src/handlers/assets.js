@@ -1,20 +1,24 @@
-import { text } from '../lib/http.js'
-import appScript from '../ui/app.js'
-import loginScript from '../ui/login.js'
-import styles from '../ui/styles.css'
+import { SECURITY_HEADERS } from '../lib/http.js'
 
-const ASSETS = new Map([
-  ['/app.js', { body: appScript, contentType: 'text/javascript; charset=utf-8' }],
-  ['/login.js', { body: loginScript, contentType: 'text/javascript; charset=utf-8' }],
-  ['/app.css', { body: styles, contentType: 'text/css; charset=utf-8' }],
-])
+// Vite writes the site icon to dist root; hashed build assets live under /assets/.
+const STATIC_ASSETS = new Set(['/favicon.svg'])
 
-export function handleAsset(pathname) {
-  const asset = ASSETS.get(pathname)
-  if (!asset) return null
+export async function handleAsset(request, env) {
+  const url = new URL(request.url)
+  const hashed = url.pathname.startsWith('/assets/')
+  if (!hashed && !STATIC_ASSETS.has(url.pathname)) return null
 
-  return text(asset.body, {
-    contentType: asset.contentType,
-    headers: { 'Cache-Control': 'no-store' },
+  const response = await env.ASSETS.fetch(request)
+  const headers = new Headers(response.headers)
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value)
+
+  if (response.status === 200) {
+    headers.set('Cache-Control', hashed ? 'public, max-age=31536000, immutable' : 'public, max-age=86400')
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
   })
 }

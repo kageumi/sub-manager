@@ -1,6 +1,9 @@
 node_modules/
 .wrangler/
+dist/
 .dev.vars
 .env
 .DS_Store
 *.log
+.agents/
+skills-lock.json

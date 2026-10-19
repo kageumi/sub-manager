@@ -1,6 +1,6 @@
 import { isAuthenticated } from '../lib/auth.js'
 import { error, json, methodNotAllowed, readJson, unauthorized } from '../lib/http.js'
-import { isValidId, parseSubscription } from '../lib/validate.js'
+import { isValidId, parseSubscription } from '../../shared/subscription.js'
 import { getSubscription, listSubscriptions, removeSubscription, saveSubscription } from '../lib/store.js'
 
 const INVALID_ID = '订阅 ID 无效'
@@ -25,8 +25,8 @@ async function create(request, env) {
   if (errors.length) return error(400, errors[0])
   if (await getSubscription(env, value.id)) return error(409, '订阅 ID 已存在，请更换一个')
 
-  await saveSubscription(env, value.id, value)
-  return json({ ok: true, id: value.id }, { status: 201 })
+  const metadata = await saveSubscription(env, value.id, value)
+  return json({ ok: true, id: value.id, sub: metadata }, { status: 201 })
 }
 
 async function update(request, env, id) {
@@ -41,8 +41,8 @@ async function update(request, env, id) {
   const { errors, value } = parseSubscription({ ...parsed.body, id }, { requireId: false })
   if (errors.length) return error(400, errors[0])
 
-  await saveSubscription(env, id, value, existing)
-  return json({ ok: true, id })
+  const metadata = await saveSubscription(env, id, value, existing)
+  return json({ ok: true, id, sub: metadata })
 }
 
 async function remove(env, id) {

@@ -1,11 +1,23 @@
 import { getSubscription } from '../lib/store.js'
-import { error, methodNotAllowed, notFound } from '../lib/http.js'
-import { isValidId } from '../lib/validate.js'
+import { error, methodNotAllowed, notFound, SECURITY_HEADERS } from '../lib/http.js'
+import { isValidId } from '../../shared/subscription.js'
 import { isBlockedCrawler } from '../lib/bots.js'
-import { DEFAULT_CONTENT_TYPE, isDomainAllowed } from '../lib/metadata.js'
+import { DEFAULT_CONTENT_TYPE, isDomainAllowed } from '../../shared/subscription.js'
 
-function quoteEtag(value) {
-  return `"${value}"`
+function matchesEtag(header, etag) {
+  return (header ?? '').split(',').some((value) => {
+    const candidate = value.trim()
+    return candidate === '*' || candidate.replace(/^W\//, '') === etag
+  })
+}
+
+function contentDisposition(filename) {
+  const fallback = filename.replace(/[^\x20-\x7e]/g, '_')
+  const encoded = encodeURIComponent(filename.toWellFormed()).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  )
+  return `inline; filename="${fallback}"; filename*=UTF-8''${encoded}`
 }
 
 const BLOCKED = '禁止访问'
@@ -35,19 +47,22 @@ export async function handleSubscription(request, env, id) {
   }
 
   const headers = new Headers({
+    ...SECURITY_HEADERS,
     'Content-Type': sub.contentType || DEFAULT_CONTENT_TYPE,
     'Cache-Control': sub.allowedCountries.length ? 'no-store' : 'public, max-age=3600',
+    Vary: 'User-Agent',
     'X-Content-Type-Options': 'nosniff',
     'X-Subscription-Id': sub.id,
-    'Content-Disposition': `inline; filename="${sub.filename}"`,
+    'Content-Disposition': contentDisposition(sub.filename),
     'Access-Control-Allow-Origin': '*',
+    'Cross-Origin-Resource-Policy': 'cross-origin',
   })
 
   if (sub.updatedAt) headers.set('Last-Modified', new Date(sub.updatedAt).toUTCString())
-  if (sub.sha256) headers.set('ETag', quoteEtag(sub.sha256))
+  if (sub.sha256) headers.set('ETag', `"${sub.sha256}"`)
   if (sub.subscriptionUserinfo) headers.set('Subscription-Userinfo', sub.subscriptionUserinfo)
 
-  if (sub.sha256 && request.headers.get('If-None-Match') === quoteEtag(sub.sha256)) {
+  if (matchesEtag(request.headers.get('If-None-Match'), headers.get('ETag'))) {
     return new Response(null, { status: 304, headers })
   }
 

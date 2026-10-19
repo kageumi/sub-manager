@@ -1,4 +1,4 @@
-import { adminUsername, sessionSecret } from './config.js'
+import { accessPassword } from './config.js'
 
 const encoder = new TextEncoder()
 const keyCache = new Map()
@@ -21,7 +21,7 @@ function base64urlToBytes(value) {
 }
 
 async function importKey(env) {
-  const secret = sessionSecret(env)
+  const secret = `sub-manager-session-v1:${accessPassword(env)}`
   let key = keyCache.get(secret)
   if (!key) {
     key = await crypto.subtle.importKey(
@@ -29,7 +29,7 @@ async function importKey(env) {
       encoder.encode(secret),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
-      ['sign'],
+      ['sign', 'verify'],
     )
     if (keyCache.size >= 8) keyCache.delete(keyCache.keys().next().value)
     keyCache.set(secret, key)
@@ -42,38 +42,35 @@ async function sign(env, payload) {
   return bytesToBase64url(new Uint8Array(signature))
 }
 
-function equalStrings(a, b) {
-  const left = encoder.encode(a)
-  const right = encoder.encode(b)
-  if (left.byteLength !== right.byteLength) return false
-  return crypto.subtle.timingSafeEqual(left, right)
-}
-
-export async function createSession(env, username, ttl = SESSION_TTL_MS) {
-  const payload = bytesToBase64url(
-    encoder.encode(JSON.stringify({ u: String(username ?? ''), exp: Date.now() + ttl })),
-  )
+export async function createSession(env, ttl = SESSION_TTL_MS) {
+  const payload = bytesToBase64url(encoder.encode(JSON.stringify({ exp: Date.now() + ttl })))
   return `${payload}.${await sign(env, payload)}`
 }
 
 export async function verifySession(env, token) {
-  if (typeof token !== 'string') return false
+  if (typeof token !== 'string' || token.length > 512) return false
+  if (accessPassword(env).length < 8) return false
 
   const parts = token.split('.')
   if (parts.length !== 2) return false
   const [payload, signature] = parts
 
-  if (!equalStrings(signature, await sign(env, payload))) return false
-
   let session
   try {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(signature)) return false
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      await importKey(env),
+      base64urlToBytes(signature),
+      encoder.encode(payload),
+    )
+    if (!valid) return false
     session = JSON.parse(new TextDecoder().decode(base64urlToBytes(payload)))
   } catch {
     return false
   }
 
-  if (!session || typeof session.exp !== 'number' || session.exp < Date.now()) return false
-  return equalStrings(String(session.u ?? ''), adminUsername(env))
+  return Boolean(session) && typeof session.exp === 'number' && session.exp > Date.now()
 }
 
 export function parseCookies(header) {
