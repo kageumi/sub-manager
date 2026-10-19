@@ -46,6 +46,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { Table, TableHeader, TableBody, TableHead, TableCell, TableRow } from '@/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { cn } from '@/lib/utils'
 import { useWorkspace } from '../app/Workspace.jsx'
 import { useNavigation } from '../app/NavigationGuard.jsx'
 import { selectSubscriptions, isRestricted } from '../subscriptions/model.js'
@@ -57,8 +58,7 @@ const sorts = [
   { value: 'name', label: '名称排序' },
 ]
 
-function SubscriptionActions({ sub }) {
-  const compact = useMediaQuery('(max-width: 639px)')
+function SubscriptionActions({ sub, compact = false }) {
   const { copy, requestDelete, openEditor } = useWorkspace()
   const { busy } = useNavigation()
   const opener = useRef(null)
@@ -117,14 +117,32 @@ function AccessBadge({ sub }) {
   return <Badge variant={restricted ? 'secondary' : 'outline'}>{restricted ? '受限' : '公开'}</Badge>
 }
 
-function Access({ sub }) {
+function Access({ sub, wrap = false }) {
   const rules = accessRules(sub)
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className={cn('flex min-w-0 items-center', wrap ? 'flex-wrap gap-x-2 gap-y-1' : 'gap-2')}>
       <AccessBadge sub={sub} />
       {rules.length > 0 && (
-        <span className="min-w-0 truncate text-xs text-muted-foreground">{rules.join(', ')}</span>
+        <span className={cn('min-w-0 text-xs text-muted-foreground', wrap ? 'break-words' : 'truncate')}>
+          {rules.join(', ')}
+        </span>
       )}
+    </div>
+  )
+}
+
+function SubscriptionName({ sub, busy, onOpen, wrap = false }) {
+  return (
+    <div className="flex min-w-0 flex-col items-start gap-0.5">
+      <Button
+        variant="link"
+        className={cn('h-auto max-w-full justify-start p-0', wrap && 'text-left')}
+        disabled={busy}
+        onClick={onOpen}
+      >
+        <span className={wrap ? 'break-all whitespace-normal' : 'truncate'}>{sub.name}</span>
+      </Button>
+      <span className="max-w-full truncate font-mono text-xs text-muted-foreground">{sub.id}</span>
     </div>
   )
 }
@@ -132,6 +150,8 @@ function Access({ sub }) {
 export function SubscriptionsPage() {
   const { collection, view, updateView, scroll, openEditor } = useWorkspace()
   const { busy } = useNavigation()
+  const desktop = useMediaQuery('(min-width: 768px)')
+  const compact = useMediaQuery('(max-width: 639px)')
   const result = useMemo(() => selectSubscriptions(collection.items, view), [collection.items, view])
   const searching = Boolean(view.query.trim() || view.filter !== 'all')
   useEffect(() => {
@@ -252,8 +272,8 @@ export function SubscriptionsPage() {
             ))}
           </div>
         ) : result.items.length ? (
-          <>
-            <div className="hidden rounded-lg border md:block">
+          desktop ? (
+            <div className="rounded-lg border">
               <Table
                 aria-label="订阅列表"
                 className="table-fixed [&_td]:px-4 [&_td]:py-3 [&_th]:px-4"
@@ -274,19 +294,7 @@ export function SubscriptionsPage() {
                   {result.items.map((sub) => (
                     <TableRow key={sub.id}>
                       <TableCell>
-                        <div className="flex min-w-0 flex-col items-start gap-0.5">
-                          <Button
-                            variant="link"
-                            className="h-auto max-w-full justify-start p-0"
-                            disabled={busy}
-                            onClick={() => openEditor(sub.id)}
-                          >
-                            <span className="truncate">{sub.name}</span>
-                          </Button>
-                          <span className="max-w-full truncate font-mono text-xs text-muted-foreground">
-                            {sub.id}
-                          </span>
-                        </div>
+                        <SubscriptionName sub={sub} busy={busy} onOpen={() => openEditor(sub.id)} />
                       </TableCell>
                       <TableCell>
                         <Access sub={sub} />
@@ -303,41 +311,22 @@ export function SubscriptionsPage() {
                 </TableBody>
               </Table>
             </div>
-            <div className="flex flex-col divide-y rounded-lg border md:hidden">
-              {result.items.map((sub) => {
-                const rules = accessRules(sub)
-                return (
-                  <article key={sub.id} className="flex flex-col gap-3 p-4">
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <Button
-                        variant="link"
-                        disabled={busy}
-                        className="h-auto max-w-full justify-start p-0 text-left"
-                        onClick={() => openEditor(sub.id)}
-                      >
-                        <span className="break-all whitespace-normal">{sub.name}</span>
-                      </Button>
-                      <span className="truncate font-mono text-xs text-muted-foreground">{sub.id}</span>
-                    </div>
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                      <AccessBadge sub={sub} />
-                      {rules.length > 0 && (
-                        <span className="min-w-0 text-xs break-words text-muted-foreground">
-                          {rules.join(', ')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-3 border-t pt-3">
-                      <span className="text-xs text-muted-foreground">
-                        {formatBytes(sub.size)} · {formatDate(sub.updatedAt)}
-                      </span>
-                      <SubscriptionActions sub={sub} />
-                    </div>
-                  </article>
-                )
-              })}
+          ) : (
+            <div className="flex flex-col divide-y rounded-lg border">
+              {result.items.map((sub) => (
+                <article key={sub.id} className="flex flex-col gap-3 p-4">
+                  <SubscriptionName sub={sub} busy={busy} onOpen={() => openEditor(sub.id)} wrap />
+                  <Access sub={sub} wrap />
+                  <div className="flex items-center justify-between gap-3 border-t pt-3">
+                    <span className="text-xs text-muted-foreground">
+                      {formatBytes(sub.size)} · {formatDate(sub.updatedAt)}
+                    </span>
+                    <SubscriptionActions sub={sub} compact={compact} />
+                  </div>
+                </article>
+              ))}
             </div>
-          </>
+          )
         ) : (
           <Empty className="min-h-64">
             <EmptyHeader>

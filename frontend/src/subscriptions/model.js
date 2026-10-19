@@ -1,6 +1,5 @@
 import {
   validateSubscriptionFields,
-  splitList,
   normalizeCountryList,
   normalizeDomainList,
 } from '../../../shared/subscription.js'
@@ -39,8 +38,8 @@ export function payloadFromDraft(draft) {
     contentType: draft.contentType.trim(),
     filename: draft.filename.trim(),
     subscriptionUserinfo: draft.subscriptionUserinfo.trim(),
-    allowedCountries: normalizeCountryList(splitList(draft.allowedCountries)),
-    allowedDomains: normalizeDomainList(splitList(draft.allowedDomains)),
+    allowedCountries: normalizeCountryList(draft.allowedCountries),
+    allowedDomains: normalizeDomainList(draft.allowedDomains),
   }
 }
 

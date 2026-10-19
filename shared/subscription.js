@@ -22,7 +22,17 @@ function sanitizeFilename(value) {
   return text ? text.replace(/[\\"]/g, '').slice(0, 120) : ''
 }
 
-export function splitList(input) {
+function sanitizeName(value) {
+  return typeof value === 'string'
+    ? value.replace(HTML_TAGS, '').replace(CONTROL_CHARS, '').trim().slice(0, 100)
+    : ''
+}
+
+function splitMetadataList(value) {
+  return value ? value.split(',') : []
+}
+
+function splitList(input) {
   const parts = Array.isArray(input) ? input : String(input ?? '').split(/[\s,，;；|]+/)
   return [...new Set(parts.map((part) => String(part).trim()).filter(Boolean))]
 }
@@ -88,12 +98,8 @@ export function isDomainAllowed(hostname, allowedDomains) {
 
 export function toMetadata(id, source = {}) {
   const input = source && typeof source === 'object' ? source : {}
-  const name =
-    typeof input.name === 'string'
-      ? input.name.replace(HTML_TAGS, '').replace(CONTROL_CHARS, '').trim().slice(0, 100)
-      : ''
   return {
-    name,
+    name: sanitizeName(input.name),
     contentType: (
       sanitizeHeaderValue(input.contentType).replace(/[^\x20-\xff]/g, '') || DEFAULT_CONTENT_TYPE
     ).slice(0, 80),
@@ -119,8 +125,8 @@ export function fromMetadata(id, metadata = {}) {
     contentType: base.contentType,
     filename: base.filename,
     subscriptionUserinfo: base.subscriptionUserinfo,
-    allowedCountries: base.allowedCountries ? base.allowedCountries.split(',') : [],
-    allowedDomains: base.allowedDomains ? base.allowedDomains.split(',') : [],
+    allowedCountries: splitMetadataList(base.allowedCountries),
+    allowedDomains: splitMetadataList(base.allowedDomains),
     size: base.size,
     sha256: base.sha256,
     createdAt: base.createdAt,
@@ -162,7 +168,7 @@ export function validateSubscriptionFields(input, { requireId = true } = {}) {
   const errors = {}
   if (requireId && !isValidId(typeof input.id === 'string' ? input.id.trim() : ''))
     errors.id = '以字母或数字开头，最多 128 位；仅支持 . _ -，不能使用系统保留名称。'
-  if (!toMetadata('', { name: input.name }).name) errors.name = '请填写订阅名称'
+  if (!sanitizeName(input.name)) errors.name = '请填写订阅名称'
   else if (input.name.trim().length > 100) errors.name = '订阅名称不能超过 100 个字符'
   if (typeof input.content !== 'string' || !input.content.trim()) errors.content = '请填写订阅内容'
   else if (byteLength(input.content) > MAX_CONTENT_BYTES) errors.content = '订阅内容不能超过 24 MB'
@@ -200,8 +206,8 @@ export function parseSubscription(body, options = {}) {
       contentType: metadata.contentType,
       filename: metadata.filename,
       subscriptionUserinfo: metadata.subscriptionUserinfo,
-      allowedCountries: normalizeCountryList(metadata.allowedCountries),
-      allowedDomains: normalizeDomainList(metadata.allowedDomains),
+      allowedCountries: splitMetadataList(metadata.allowedCountries),
+      allowedDomains: splitMetadataList(metadata.allowedDomains),
     },
   }
 }

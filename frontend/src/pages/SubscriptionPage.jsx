@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowLeftIcon,
   CopyIcon,
@@ -88,7 +88,16 @@ export function SubscriptionPage({ id, onBack }) {
     await save()
   }
   useSaveShortcut(submit, active)
-  const contentSize = useMemo(() => byteLength(editor.draft.content), [editor.draft.content])
+  const content = editor.draft.content
+  const largeContent = content.length >= 100_000
+  const [largeContentSize, setLargeContentSize] = useState(0)
+  useEffect(() => {
+    // Encoding a large draft on every keystroke is costly; wait until typing pauses.
+    if (!largeContent) return
+    const timer = setTimeout(() => setLargeContentSize(byteLength(content)), 200)
+    return () => clearTimeout(timer)
+  }, [content, largeContent])
+  const contentSize = largeContent ? largeContentSize : byteLength(content)
   async function importFile(event) {
     const imported = event.target.files?.[0]
     event.target.value = ''

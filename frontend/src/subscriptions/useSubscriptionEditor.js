@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { subscriptionApi } from './api.js'
 import { emptyDraft, draftFromSubscription, payloadFromDraft, validateDraft } from './model.js'
-import { MAX_CONTENT_BYTES } from '../../../shared/subscription.js'
+import { byteLength, MAX_CONTENT_BYTES } from '../../../shared/subscription.js'
 
 function initialState() {
   const draft = emptyDraft()
@@ -136,7 +136,8 @@ export function useSubscriptionEditor(write) {
       )
         return false
       if (latest.current.draft.content !== before.draft.content) throw new Error('配置已修改，请重新导入文件')
-      if (new TextEncoder().encode(content).byteLength > MAX_CONTENT_BYTES)
+      // A valid UTF-8 file re-encodes to its byte size; only malformed input can expand.
+      if (content.includes('\uFFFD') && byteLength(content) > MAX_CONTENT_BYTES)
         throw new Error('文件不能超过 24 MB')
       return change('content', content)
     },
