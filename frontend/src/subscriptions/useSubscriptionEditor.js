@@ -17,7 +17,7 @@ function initialState() {
   }
 }
 
-// A draft lives with its page, not with the list or the global session.
+// A draft lives with the workspace and resets when the editor closes.
 export function useSubscriptionEditor(write) {
   const [state, setState] = useState(initialState)
   const latest = useRef(state)

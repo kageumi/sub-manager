@@ -14,15 +14,6 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
   DropdownMenu,
@@ -166,158 +157,161 @@ export function SubscriptionsPage() {
     return () => window.removeEventListener('scroll', remember)
   }, [scroll])
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h1>订阅列表</h1>
-        </CardTitle>
-        <CardDescription>共 {collection.items.length} 条订阅</CardDescription>
-        <CardAction>
-          <Button onClick={() => openEditor()} disabled={busy}>
-            <PlusIcon data-icon="inline-start" />
-            新建订阅
-          </Button>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <InputGroup className="lg:max-w-xs">
-            <InputGroupInput
-              placeholder="搜索订阅"
-              aria-label="搜索订阅"
-              value={view.query}
-              onChange={(event) => updateView({ query: event.target.value })}
-            />
-            <InputGroupAddon>
-              <SearchIcon />
+    <div className="flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight">订阅列表</h1>
+          <p className="text-sm text-muted-foreground">共 {collection.items.length} 条订阅</p>
+        </div>
+        <Button onClick={() => openEditor()} disabled={busy}>
+          <PlusIcon data-icon="inline-start" />
+          新建订阅
+        </Button>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <InputGroup className="sm:max-w-xs">
+          <InputGroupInput
+            placeholder="搜索订阅"
+            aria-label="搜索订阅"
+            value={view.query}
+            onChange={(event) => updateView({ query: event.target.value })}
+          />
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
+          {view.query && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                size="icon-xs"
+                aria-label="清除搜索"
+                onClick={() => updateView({ query: '' })}
+              >
+                <XIcon />
+              </InputGroupButton>
             </InputGroupAddon>
-            {view.query && (
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  size="icon-xs"
-                  aria-label="清除搜索"
-                  onClick={() => updateView({ query: '' })}
-                >
-                  <XIcon />
-                </InputGroupButton>
-              </InputGroupAddon>
-            )}
-          </InputGroup>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <ToggleGroup
-              variant="outline"
-              spacing={0}
-              value={[view.filter]}
-              disabled={busy}
-              aria-label="访问范围"
-              onValueChange={(value) => {
-                if (value[0]) updateView({ filter: value[0] })
+          )}
+        </InputGroup>
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
+          <ToggleGroup
+            variant="outline"
+            spacing={0}
+            value={[view.filter]}
+            disabled={busy}
+            aria-label="访问范围"
+            onValueChange={(value) => {
+              if (value[0]) updateView({ filter: value[0] })
+            }}
+          >
+            <ToggleGroupItem value="all">全部</ToggleGroupItem>
+            <ToggleGroupItem value="unrestricted">公开</ToggleGroupItem>
+            <ToggleGroupItem value="restricted">受限</ToggleGroupItem>
+          </ToggleGroup>
+          <div className="flex items-center gap-2">
+            <Select
+              items={sorts}
+              value={view.sort}
+              onValueChange={(sort) => {
+                if (sort) updateView({ sort })
               }}
+              disabled={busy}
             >
-              <ToggleGroupItem value="all">全部</ToggleGroupItem>
-              <ToggleGroupItem value="unrestricted">公开</ToggleGroupItem>
-              <ToggleGroupItem value="restricted">受限</ToggleGroupItem>
-            </ToggleGroup>
-            <div className="flex items-center gap-2">
-              <Select
-                items={sorts}
-                value={view.sort}
-                onValueChange={(sort) => {
-                  if (sort) updateView({ sort })
-                }}
-                disabled={busy}
-              >
-                <SelectTrigger aria-label="排序方式">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false}>
-                  <SelectGroup>
-                    {sorts.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="刷新订阅列表"
-                disabled={collection.loading || busy}
-                aria-busy={collection.loading}
-                onClick={collection.refresh}
-              >
-                {collection.loading ? <Spinner aria-hidden="true" /> : <RefreshCwIcon />}
-              </Button>
-            </div>
+              <SelectTrigger aria-label="排序方式">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectGroup>
+                  {sorts.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="刷新订阅列表"
+              disabled={collection.loading || busy}
+              aria-busy={collection.loading}
+              onClick={collection.refresh}
+            >
+              {collection.loading ? <Spinner aria-hidden="true" /> : <RefreshCwIcon />}
+            </Button>
           </div>
         </div>
-        {collection.error && (
-          <Alert variant="destructive">
-            <AlertTitle>列表加载失败</AlertTitle>
-            <AlertDescription>{collection.error}</AlertDescription>
-            <Button variant="outline" size="sm" className="mt-2 w-fit" onClick={collection.refresh}>
-              重试
-            </Button>
-          </Alert>
-        )}
-        {collection.loading && !collection.items.length ? (
-          <div className="flex flex-col gap-5 py-6" role="status" aria-label="正在加载订阅">
-            {[0, 1, 2].map((key) => (
-              <div key={key} className="flex justify-between gap-8">
-                <Skeleton className="h-10 w-1/2" />
-                <Skeleton className="h-8 w-20" />
+      </div>
+      {collection.error && (
+        <Alert variant="destructive">
+          <AlertTitle>列表加载失败</AlertTitle>
+          <AlertDescription>{collection.error}</AlertDescription>
+          <Button variant="outline" size="sm" className="mt-2 w-fit" onClick={collection.refresh}>
+            重试
+          </Button>
+        </Alert>
+      )}
+      {collection.loading && !collection.items.length ? (
+        <div
+          className="flex flex-col gap-4 rounded-xl border bg-card p-4"
+          role="status"
+          aria-label="正在加载订阅"
+        >
+          {[0, 1, 2].map((key) => (
+            <div key={key} className="flex items-center justify-between gap-8">
+              <div className="flex min-w-0 flex-col gap-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-20" />
               </div>
-            ))}
-          </div>
-        ) : result.items.length ? (
-          desktop ? (
-            <div className="rounded-lg border">
-              <Table
-                aria-label="订阅列表"
-                className="table-fixed [&_td]:px-4 [&_td]:py-3 [&_th]:px-4"
-                aria-busy={collection.loading}
-              >
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>订阅</TableHead>
-                    <TableHead className="w-60">访问</TableHead>
-                    <TableHead className="hidden w-24 lg:table-cell">大小</TableHead>
-                    <TableHead className="hidden w-32 lg:table-cell">更新时间</TableHead>
-                    <TableHead className="w-32">
-                      <span className="sr-only">操作</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {result.items.map((sub) => (
-                    <TableRow key={sub.id}>
-                      <TableCell>
-                        <SubscriptionName sub={sub} busy={busy} onOpen={() => openEditor(sub.id)} />
-                      </TableCell>
-                      <TableCell>
-                        <Access sub={sub} />
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">{formatBytes(sub.size)}</TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <span className="text-muted-foreground">{formatDate(sub.updatedAt)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <SubscriptionActions sub={sub} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <Skeleton className="h-7 w-20" />
             </div>
+          ))}
+        </div>
+      ) : result.items.length ? (
+        <div className="overflow-hidden rounded-xl border bg-card">
+          {desktop ? (
+            <Table
+              aria-label="订阅列表"
+              className="table-fixed [&_td]:px-4 [&_td]:py-3 [&_th]:h-9 [&_th]:px-4 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground"
+              aria-busy={collection.loading}
+            >
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead>订阅</TableHead>
+                  <TableHead className="w-60">访问</TableHead>
+                  <TableHead className="hidden w-24 lg:table-cell">大小</TableHead>
+                  <TableHead className="hidden w-32 lg:table-cell">更新时间</TableHead>
+                  <TableHead className="w-32">
+                    <span className="sr-only">操作</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {result.items.map((sub) => (
+                  <TableRow key={sub.id}>
+                    <TableCell>
+                      <SubscriptionName sub={sub} busy={busy} onOpen={() => openEditor(sub.id)} />
+                    </TableCell>
+                    <TableCell>
+                      <Access sub={sub} />
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">{formatBytes(sub.size)}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <span className="text-muted-foreground">{formatDate(sub.updatedAt)}</span>
+                    </TableCell>
+                    <TableCell>
+                      <SubscriptionActions sub={sub} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : (
-            <div className="flex flex-col divide-y rounded-lg border">
+            <div className="flex flex-col divide-y">
               {result.items.map((sub) => (
                 <article key={sub.id} className="flex flex-col gap-3 p-4">
                   <SubscriptionName sub={sub} busy={busy} onOpen={() => openEditor(sub.id)} wrap />
                   <Access sub={sub} wrap />
-                  <div className="flex items-center justify-between gap-3 border-t pt-3">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-xs text-muted-foreground">
                       {formatBytes(sub.size)} · {formatDate(sub.updatedAt)}
                     </span>
@@ -326,8 +320,40 @@ export function SubscriptionsPage() {
                 </article>
               ))}
             </div>
-          )
-        ) : (
+          )}
+          <div className="flex h-10 items-center justify-between gap-3 border-t px-4">
+            <span className="text-xs text-muted-foreground">
+              {searching ? `找到 ${result.total} 条` : `${collection.items.length} 条订阅`}
+            </span>
+            {result.pages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="上一页"
+                  disabled={busy || result.page === 1}
+                  onClick={() => updateView({ page: result.page - 1 })}
+                >
+                  <ChevronLeftIcon />
+                </Button>
+                <span className="min-w-10 text-center text-xs tabular-nums text-muted-foreground">
+                  {result.page} / {result.pages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="下一页"
+                  disabled={busy || result.page === result.pages}
+                  onClick={() => updateView({ page: result.page + 1 })}
+                >
+                  <ChevronRightIcon />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-card">
           <Empty className="min-h-64">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -347,36 +373,8 @@ export function SubscriptionsPage() {
               )}
             </EmptyContent>
           </Empty>
-        )}
-      </CardContent>
-      <CardFooter className="justify-between gap-3">
-        <span className="text-xs text-muted-foreground">
-          {searching ? `找到 ${result.total} 条` : `${collection.items.length} 条订阅`}
-        </span>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="上一页"
-            disabled={busy || result.page === 1}
-            onClick={() => updateView({ page: result.page - 1 })}
-          >
-            <ChevronLeftIcon />
-          </Button>
-          <span className="min-w-12 text-center text-xs tabular-nums">
-            {result.page} / {result.pages}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="下一页"
-            disabled={busy || result.page === result.pages}
-            onClick={() => updateView({ page: result.page + 1 })}
-          >
-            <ChevronRightIcon />
-          </Button>
         </div>
-      </CardFooter>
-    </Card>
+      )}
+    </div>
   )
 }

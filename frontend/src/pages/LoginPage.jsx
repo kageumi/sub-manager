@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { EyeIcon, EyeOffIcon } from 'lucide-react'
+import { EyeIcon, EyeOffIcon, SquareTerminalIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { AppearanceMenu } from '../shared/menus.jsx'
 import { requestJson } from '../shared/api.js'
 
@@ -53,11 +53,16 @@ export function LoginPage({ onSuccess, restoring = false }) {
           <Card>
             <CardHeader>
               <CardTitle>
-                <h1>{restoring ? '重新登录' : '订阅管理'}</h1>
+                <h1 className="flex items-center gap-2">
+                  <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
+                    <SquareTerminalIcon className="size-4" aria-hidden="true" />
+                  </span>
+                  <span>{restoring ? '重新登录' : '订阅管理'}</span>
+                </h1>
               </CardTitle>
               <CardDescription>{restoring ? '登录后继续编辑' : '个人订阅工作空间'}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-5">
               <FieldGroup>
                 <Field data-invalid={Boolean(error)} data-disabled={loading}>
                   <FieldLabel htmlFor="access-password">访问密码</FieldLabel>
@@ -91,8 +96,6 @@ export function LoginPage({ onSuccess, restoring = false }) {
                   {error && <FieldError id="password-error">{error}</FieldError>}
                 </Field>
               </FieldGroup>
-            </CardContent>
-            <CardFooter>
               <Button
                 type="submit"
                 disabled={loading}
@@ -103,7 +106,7 @@ export function LoginPage({ onSuccess, restoring = false }) {
                 {loading && <Spinner data-icon="inline-start" aria-hidden="true" />}
                 {restoring ? '登录并继续' : '登录'}
               </Button>
-            </CardFooter>
+            </CardContent>
           </Card>
         </form>
       </main>

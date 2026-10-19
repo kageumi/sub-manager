@@ -1,10 +1,12 @@
-import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
-import { LogOutIcon, SquareTerminalIcon } from 'lucide-react'
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { ArrowLeftIcon, LogOutIcon, RotateCcwIcon, SaveIcon, SquareTerminalIcon } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { useSubscriptionEditor } from '../subscriptions/useSubscriptionEditor.js'
 import { useSubscriptions } from '../subscriptions/useSubscriptions.js'
 import { defaultListView, publicUrlFor } from '../subscriptions/model.js'
-import { NavigationGuard, useNavigation } from './NavigationGuard.jsx'
+import { NavigationGuard, useEditorGuard, useNavigation } from './NavigationGuard.jsx'
 import { preloadEditor } from './preload.js'
 import { AppearanceMenu } from '../shared/menus.jsx'
 import { ConfirmDialog } from '../shared/ConfirmDialog.jsx'
@@ -21,10 +23,26 @@ const SubscriptionPage = lazy(() =>
   import('../pages/SubscriptionPage.jsx').then((module) => ({ default: module.SubscriptionPage })),
 )
 
-function Header({ onLogout, onList, setLoggingOut }) {
+function Header({ onLogout, onList, setLoggingOut, editor, mode, onSave, onUndo, disabled }) {
   const compact = useMediaQuery('(max-width: 639px)')
   const guard = useNavigation()
   const notify = useNotify()
+  const editing = Boolean(editor)
+  const status = !editor
+    ? ''
+    : editor.status === 'loading'
+      ? '加载中'
+      : editor.status === 'load-error'
+        ? '读取失败'
+        : editor.busy
+          ? '保存中'
+          : editor.dirty
+            ? '未保存'
+            : editor.current
+              ? '已保存'
+              : '草稿'
+  const statusVariant =
+    editor?.status === 'load-error' ? 'destructive' : editor?.dirty ? 'secondary' : 'outline'
   async function logout() {
     setLoggingOut(true)
     try {
@@ -37,24 +55,80 @@ function Header({ onLogout, onList, setLoggingOut }) {
     }
   }
   return (
-    <header className="border-b bg-background">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
-        <Button variant="ghost" disabled={guard.busy} onClick={onList} aria-label="订阅列表">
-          <SquareTerminalIcon data-icon="inline-start" />
-          订阅管理
-        </Button>
-        <div className="flex items-center gap-2">
-          <AppearanceMenu />
-          <Button
-            variant="ghost"
-            size={compact ? 'icon' : 'default'}
-            disabled={guard.busy}
-            onClick={() => guard.request(logout)}
-            aria-label="退出登录"
+    <header className="sticky top-0 z-20 border-b border-border/60 bg-page/85 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-1">
+          {editing ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={guard.busy}
+                aria-label="返回列表"
+                onClick={onList}
+              >
+                <ArrowLeftIcon />
+              </Button>
+              <h1 id="editor-title" className="truncate text-sm font-semibold tracking-tight">
+                {mode === 'edit' ? '编辑订阅' : '新建订阅'}
+              </h1>
+              <span role="status" className="ml-1 hidden sm:block">
+                <Badge variant={statusVariant}>{status}</Badge>
+              </span>
+            </>
+          ) : (
+            <div className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+              <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
+                <SquareTerminalIcon className="size-4" aria-hidden="true" />
+              </span>
+              <span>订阅管理</span>
+            </div>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {editing && (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size={compact ? 'icon' : 'default'}
+                disabled={disabled || !editor.dirty}
+                aria-label="撤销修改"
+                onClick={onUndo}
+              >
+                <RotateCcwIcon data-icon="inline-start" />
+                <span className="hidden sm:inline">撤销</span>
+              </Button>
+              <Button
+                type="button"
+                disabled={disabled || (Boolean(editor.current) && !editor.dirty)}
+                aria-busy={editor.busy}
+                onClick={onSave}
+              >
+                {editor.busy ? (
+                  <Spinner data-icon="inline-start" aria-hidden="true" />
+                ) : (
+                  <SaveIcon data-icon="inline-start" />
+                )}
+                {mode === 'create' ? '创建' : '保存'}
+              </Button>
+            </>
+          )}
+          <div
+            className={editing ? 'ml-1 hidden items-center gap-1 lg:flex' : 'ml-1 flex items-center gap-1'}
           >
-            <LogOutIcon data-icon="inline-start" />
-            <span className="hidden sm:inline">退出</span>
-          </Button>
+            <AppearanceMenu />
+            <Button
+              variant="ghost"
+              size={compact ? 'icon' : 'default'}
+              disabled={guard.busy}
+              aria-label="退出登录"
+              onClick={() => guard.request(logout)}
+            >
+              <LogOutIcon data-icon="inline-start" />
+              <span className="hidden sm:inline">退出</span>
+            </Button>
+          </div>
         </div>
       </div>
     </header>
@@ -81,10 +155,23 @@ function WorkspaceContent({ active, onLogout, collection, setLoggingOut }) {
   const notify = useNotify()
   const [view, setView] = useState(defaultListView)
   const [selection, setSelection] = useState(null)
-  const scroll = useRef(0)
   const [deletion, setDeletion] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const scroll = useRef(0)
+  const editor = useSubscriptionEditor(collection.save)
+  const { open: openDraft, save: saveDraft, reset: resetDraft } = editor
   const previouslyActive = useRef(active)
+
+  useEffect(() => {
+    if (!selection) {
+      openDraft(null)
+      setResetting(false)
+      return
+    }
+    openDraft(selection.id)
+    window.scrollTo(0, 0)
+  }, [selection, openDraft])
   useEffect(() => {
     if (active && !previouslyActive.current) collection.refresh()
     previouslyActive.current = active
@@ -98,6 +185,13 @@ function WorkspaceContent({ active, onLogout, collection, setLoggingOut }) {
     },
     [],
   )
+  const save = useCallback(async () => {
+    const result = await saveDraft()
+    if (result) notify('已保存')
+    return result
+  }, [saveDraft, notify])
+  useEditorGuard({ dirty: editor.dirty, busy: editor.busy, save })
+
   async function copy(sub) {
     try {
       await navigator.clipboard.writeText(publicUrlFor(sub, window.location.origin))
@@ -126,11 +220,15 @@ function WorkspaceContent({ active, onLogout, collection, setLoggingOut }) {
   function openEditor(id = null) {
     guard.request(() => setSelection({ id }))
   }
+  const mode = selection?.id || editor.current ? 'edit' : 'create'
+  const editorDisabled = editor.status !== 'ready' || collection.writing
   return (
     <WorkspaceContext.Provider
       value={{
         collection,
         active,
+        editor,
+        save,
         view,
         scroll,
         openEditor,
@@ -151,11 +249,20 @@ function WorkspaceContent({ active, onLogout, collection, setLoggingOut }) {
           >
             跳至主要内容
           </a>
-          <Header onLogout={onLogout} onList={openList} setLoggingOut={setLoggingOut} />
+          <Header
+            onLogout={onLogout}
+            onList={openList}
+            setLoggingOut={setLoggingOut}
+            editor={selection ? editor : null}
+            mode={mode}
+            onSave={save}
+            onUndo={() => setResetting(true)}
+            disabled={editorDisabled}
+          />
           <main
             id="main-content"
             tabIndex={-1}
-            className="mx-auto w-full max-w-7xl px-4 py-8 outline-none sm:px-8 sm:py-10"
+            className="mx-auto w-full max-w-6xl px-4 py-6 outline-none sm:px-6 sm:py-8"
           >
             <Suspense
               fallback={
@@ -168,10 +275,23 @@ function WorkspaceContent({ active, onLogout, collection, setLoggingOut }) {
                 </div>
               }
             >
-              {selection ? <SubscriptionPage id={selection.id} onBack={openList} /> : <SubscriptionsPage />}
+              {selection ? <SubscriptionPage id={selection.id} /> : <SubscriptionsPage />}
             </Suspense>
           </main>
         </div>
+        {active && selection && resetting && (
+          <ConfirmDialog
+            title="撤销全部未保存的修改？"
+            confirmLabel="确认撤销"
+            onCancel={() => setResetting(false)}
+            onConfirm={() => {
+              resetDraft()
+              setResetting(false)
+            }}
+          >
+            恢复到上次保存的内容。
+          </ConfirmDialog>
+        )}
         {active && deletion && (
           <ConfirmDialog
             title="删除订阅？"
